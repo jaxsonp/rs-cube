@@ -2,5 +2,7 @@
 name = "rs-cube"
 version = "0.1.0"
 edition = "2021"
+authors = ["Jaxson Pahukula <jaxpahu@gmail.com>"]
 
 [dependencies]
+termion = "4.0.2"
