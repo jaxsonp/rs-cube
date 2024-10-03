@@ -5,4 +5,4 @@ edition = "2021"
 authors = ["Jaxson Pahukula <jaxpahu@gmail.com>"]
 
 [dependencies]
-termion = "4.0.2"
+crossterm = "0.28.1"
