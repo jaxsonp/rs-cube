@@ -6,3 +6,4 @@ authors = ["Jaxson Pahukula <jaxpahu@gmail.com>"]
 
 [dependencies]
 crossterm = "0.28.1"
+nalgebra = "0.33.0"
