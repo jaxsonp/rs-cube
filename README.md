@@ -2,4 +2,4 @@
 
 A 3D cube in your terminal
 
-![Demo vid](./demo.mp4)
+![Demo vid](./demo.gif)
