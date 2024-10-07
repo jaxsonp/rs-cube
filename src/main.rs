@@ -4,14 +4,12 @@ use nalgebra::{Matrix3, Rotation3, Vector3};
 
 use core::f32;
 use std::{
-    cmp::{max, min},
     io::{self, Write},
-    ops::{Mul, Sub},
     thread,
     time::{Duration, Instant},
 };
 
-const TARGET_FPS: f32 = 30.0;
+const TARGET_FPS: f32 = 60.0;
 /// Aspect ratio of characters in the terminal (width / height)
 const PX_RATIO: f32 = 0.50;
 
@@ -21,10 +19,10 @@ const CAM_FOV: f32 = 70.0;
 const CAM_DIST: f32 = 6.0;
 
 /// Ambient lighting direction
-const LIGHT_DIRECTION: Vector3<f32> = Vector3::new(-2.0, -4.0, -1.0);
+const LIGHT_DIRECTION: Vector3<f32> = Vector3::new(-1.5, -1.0, 0.0);
 
 /// Gradient of characters to use for shading (16 long)
-const GRADIENT_CHARS: &str = "";
+const GRADIENT_CHARS: &str = " .,:;+zL(FE380&@";
 
 fn main() -> Result<(), std::io::Error> {
     let mut stdout = io::stdout();
@@ -118,7 +116,7 @@ fn main() -> Result<(), std::io::Error> {
         }
 
         // rotating cube
-        let rot: Rotation3<f32> = Rotation3::new(Vector3::new(0.00702, 0.022003, 0.006));
+        let rot: Rotation3<f32> = Rotation3::new(Vector3::new(0.00351, 0.011015, 0.0003));
         for vert in verts.iter_mut() {
             *vert = rot * (*vert);
         }
@@ -236,16 +234,8 @@ impl Camera {
 
 /// Function that turns a color value from 0-255 into a char to print
 fn get_char_from_val(val: u8) -> char {
-    match val >> 5 {
-        7 => '@',
-        6 => '0',
-        5 => 'O',
-        4 => '+',
-        3 => '=',
-        2 => ':',
-        1 => '.',
-        _ => ' ',
-    }
+    let index = val as usize >> 4;
+    return GRADIENT_CHARS.chars().nth(index).unwrap();
 }
 
 /// Util function for bounding value
