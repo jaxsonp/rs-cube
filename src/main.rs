@@ -1,15 +1,11 @@
-use crossterm::{
-    self,
-    cursor::MoveTo,
-    style::{self, StyledContent, Stylize},
-    terminal, QueueableCommand,
-};
+use crossterm::{self, cursor, style, terminal, ExecutableCommand, QueueableCommand};
+use ctrlc;
 use nalgebra::{Matrix3, Rotation3, Vector3};
 
 use core::f32;
 use std::{
     cmp::{max, min},
-    io::{stdout, Write},
+    io::{self, Write},
     thread,
     time::{Duration, Instant},
 };
@@ -26,14 +22,29 @@ const CAM_DIST: f32 = 6.0;
 /// Ambient lighting direction
 const LIGHT_DIRECTION: Vector3<f32> = Vector3::new(-2.0, -4.0, -1.0);
 
+/// Gradient of characters to use for shading (16 long)
+const GRADIENT_CHARS: &str = "";
+
 fn main() -> Result<(), std::io::Error> {
-    let mut stdout = stdout();
+    let mut stdout = io::stdout();
 
     // terminal sizing
     let mut w: usize = 0;
     let mut h: usize = 0;
     let _ = update_size(&mut w, &mut h);
     eprintln!("size: {w}, {h}");
+
+    // hiding cursor
+    stdout.execute(crossterm::cursor::Hide)?;
+    ctrlc::set_handler(move || {
+        // showing cursor on exit
+        let mut stdout = io::stdout();
+        stdout.queue(cursor::MoveTo(0, h as u16)).unwrap();
+        stdout.flush().unwrap();
+        stdout.execute(crossterm::cursor::Show).unwrap();
+        std::process::exit(0x0);
+    })
+    .expect("Error setting exit handler");
 
     let mut frame_buffer: Vec<u8> = Vec::new();
     let mut z_buffer: Vec<f32> = Vec::new();
@@ -174,6 +185,7 @@ fn main() -> Result<(), std::io::Error> {
         }
 
         // drawing framebuffer
+        stdout.queue(cursor::MoveTo(0, 0))?;
         for i in 0..(frame_buffer.len()) {
             if i % w == 0 && i != 0 {
                 stdout.queue(style::Print("\r\n"))?;
@@ -182,7 +194,6 @@ fn main() -> Result<(), std::io::Error> {
             stdout.queue(style::Print(c))?;
         }
         stdout.flush()?;
-        stdout.queue(MoveTo(0, 0))?;
 
         t += 1;
         let elapsed = start_time.elapsed();
