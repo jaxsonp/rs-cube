@@ -6,6 +6,7 @@ use core::f32;
 use std::{
     cmp::{max, min},
     io::{self, Write},
+    ops::{Mul, Sub},
     thread,
     time::{Duration, Instant},
 };
@@ -36,10 +37,9 @@ fn main() -> Result<(), std::io::Error> {
 
     // hiding cursor
     stdout.execute(crossterm::cursor::Hide)?;
-    ctrlc::set_handler(move || {
+    ctrlc::set_handler(|| {
         // showing cursor on exit
         let mut stdout = io::stdout();
-        stdout.queue(cursor::MoveTo(0, h as u16)).unwrap();
         stdout.flush().unwrap();
         stdout.execute(crossterm::cursor::Show).unwrap();
         std::process::exit(0x0);
@@ -153,21 +153,31 @@ fn main() -> Result<(), std::io::Error> {
             let z_coefficients = mat * Vector3::new(z0, z1, z2);
 
             // getting bounding box of tri
-            let u_min = clamp(min(u0, min(u1, u2)), 0, w - 1);
-            let u_max = clamp(max(u0, max(u1, u2)), 0, w - 1);
-            let v_min = clamp(min(v0, min(v1, v2)), 0, h - 1);
-            let v_max = clamp(max(v0, max(v1, v2)), 0, h - 1);
+            let u_min = clamp(f32::min(u0, f32::min(u1, u2)) as usize, 0, w - 1);
+            let u_max = clamp(f32::max(u0, f32::max(u1, u2)) as usize, 0, w - 1);
+            let v_min = clamp(f32::min(v0, f32::min(v1, v2)) as usize, 0, h - 1);
+            let v_max = clamp(f32::max(v0, f32::max(v1, v2)) as usize, 0, h - 1);
+
+            let u0 = u0 as isize;
+            let v0 = v0 as isize;
+            let u1 = u1 as isize;
+            let v1 = v1 as isize;
+            let u2 = u2 as isize;
+            let v2 = v2 as isize;
 
             for v in v_min..=v_max {
                 for u in u_min..=u_max {
-                    // checking if point is inside tri
-                    if !tri_edge_function((u0, v0), (u1, v1), (u, v))
-                        || !tri_edge_function((u1, v1), (u2, v2), (u, v))
-                        || !tri_edge_function((u2, v2), (u0, v0), (u, v))
                     {
-                        continue;
+                        let u = u as isize;
+                        let v = v as isize;
+                        // checking if point is inside tri
+                        if !tri_edge_function((u0, v0), (u1, v1), (u, v))
+                            || !tri_edge_function((u1, v1), (u2, v2), (u, v))
+                            || !tri_edge_function((u2, v2), (u0, v0), (u, v))
+                        {
+                            continue;
+                        }
                     }
-
                     let buf_index = v * w + u;
 
                     // checking z buffer
@@ -211,7 +221,7 @@ struct Camera {
 }
 
 impl Camera {
-    fn get_projection(&self, point: &Vector3<f32>) -> (usize, usize, f32) {
+    fn get_projection(&self, point: &Vector3<f32>) -> (f32, f32, f32) {
         let mat: Matrix3<f32> = Matrix3::from_columns(&[self.a, self.b, self.c])
             .try_inverse()
             .unwrap();
@@ -220,7 +230,7 @@ impl Camera {
         let z = res.z;
         let u = res.x / z;
         let v = res.y / z;
-        return (u as usize, v as usize, z);
+        return (u, v, z);
     }
 }
 
@@ -248,18 +258,12 @@ fn clamp<T: PartialOrd>(val: T, min: T, max: T) -> T {
     return val;
 }
 
-/// Util function for triangle rasterization, returns true if the points are in clockwise order (a -> b -> c)
+/// Util function for triangle rasterization, returns a positive number if the points are in clockwise order (a -> b -> c)
 fn tri_edge_function(
-    (ax, ay): (usize, usize),
-    (bx, by): (usize, usize),
-    (cx, cy): (usize, usize),
+    (ax, ay): (isize, isize),
+    (bx, by): (isize, isize),
+    (cx, cy): (isize, isize),
 ) -> bool {
-    let ax = ax as isize;
-    let ay = ay as isize;
-    let bx = bx as isize;
-    let by = by as isize;
-    let cx = cx as isize;
-    let cy = cy as isize;
     return (bx - ax) * (cy - ay) - (by - ay) * (cx - ax) >= 0;
 }
 
